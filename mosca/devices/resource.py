@@ -26,14 +26,14 @@
 from .. import utils as _utils
 import collections as _collections
 
-class Resource:
+class Resource(_utils.Observed):
     """base structure for managed physical resource.
 
     you can watch out for changes in resource availability
     by calling the Resource.watch(obj) method.
     (remove from the watch list by Resource.unwatch(obj).)
 
-    When resource availability changes, `obj.resource_changed()`
+    When resource availability changes, `obj.change_event(arg)`
     is called."""
 
     @staticmethod
@@ -49,21 +49,7 @@ class Resource:
         return out
 
     def __init__(self):
-        self._observers = []
-
-    def watch(self, obj):
-        if obj not in self._observers:
-            self._observers.append(obj)
-
-    def unwatch(self, obj):
-        if obj in self._observers:
-            self._observers.remove(obj)
-
-    def _fire(self):
-        """(prepared for subclasses) emits a resource-change event."""
-        for obj in self._observers:
-            if hasattr(obj, "resource_changed"):
-                obj.resource_changed()
+        super().__init__()
 
     def retain(self, user):
         """returns a Result instance with this Resource."""
@@ -138,12 +124,12 @@ class ResourceGroup(Resource):
         """tests if this resource is available for the specified user."""
         return all(comp.is_available(user) for comp in self.values())
 
-    def resource_changed(self):
+    def change_event(self, arg=None):
         """called from the underlying resource sub-components.
         fires a resource-change event only when this object itself
         is not directly responsible for the change."""
         if self.__changing == False:
-            self._fire()
+            self._fire(arg)
 
     def _register(self, user):
         """registers a new user (without any checking)"""

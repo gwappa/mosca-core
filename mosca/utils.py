@@ -45,3 +45,26 @@ class Result(_collections.namedtuple("Result",
         if message is None:
             message = "failed (details unknown)"
         return cls(False, message, value)
+
+class Observed:
+    """by inheriting Observed, you can watch out for changes
+    in this object by calling the Observed.watch(obj) method.
+    (remove from the watch list by Observed.unwatch(obj).)
+
+    When anything changes, `obj.change_event(arg)` is called."""
+    def __init__(self):
+        self._observers = []
+
+    def watch(self, obj):
+        if obj not in self._observers:
+            self._observers.append(obj)
+
+    def unwatch(self, obj):
+        if obj in self._observers:
+            self._observers.remove(obj)
+
+    def _fire(self, arg=None):
+        """(prepared for subclasses) emits a resource-change event."""
+        for obj in self._observers:
+            if hasattr(obj, "change_event"):
+                obj.change_event(arg)
